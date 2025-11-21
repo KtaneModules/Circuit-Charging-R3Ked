@@ -27,6 +27,8 @@ public class circuitCharging : MonoBehaviour {
     public Material on;
 
     string[] c01characters;
+    char c02character;
+    int c02position;
 
     public static readonly string[] wordBank = new string[]
        {
@@ -93,14 +95,15 @@ public class circuitCharging : MonoBehaviour {
 
         while (wordsLeftThisGeneration >= wordBank.Length / 2)
         {
-            generateHint(0, 1);
+            generateHint(0, 2);
         }
         Debug.Log(wordsLeftThisGeneration);
         foreach (string i in possibleWordsThisGeneration)
         {
             Debug.Log(i);
         }
-        Debug.Log(c01characters[0] + c01characters[1]);
+        Debug.Log(c02position);
+        Debug.Log(c02character);
     }
 
     void Update() { //Shit that happens at any point after initialization
@@ -166,9 +169,10 @@ public class circuitCharging : MonoBehaviour {
         wordsLeftThisGeneration = 0;
 
         //0 is light, 1 is speaker, and 2 is letter display
-        if (component1 == 0 && component2 == 1) {
+        if (component1 == 0 && component2 == 1)
+        {
             int startingCharacter = UnityEngine.Random.Range(0, 4);
-            c01characters = new string[] {chosenWord[startingCharacter].ToString(), chosenWord[startingCharacter + 1].ToString()}; // i don't want to use c# anymore. this language fucking sucks
+            c01characters = new string[] { chosenWord[startingCharacter].ToString(), chosenWord[startingCharacter + 1].ToString() }; // i don't want to use c# anymore. this language fucking sucks
 
             //loop through each word left and if it's a possibility
             foreach (string i in possibleWords)
@@ -181,10 +185,24 @@ public class circuitCharging : MonoBehaviour {
             }
 
             //50% chance to flip the two characters so the order doesn't matter
-            if (UnityEngine.Random.Range(0,2) == 0)
+            if (UnityEngine.Random.Range(0, 2) == 0)
             {
                 c01characters = new string[] { c01characters[1], c01characters[0] };
             }
+        }
+        else if (component1 == 0 && component2 == 2)
+        {
+            c02position = UnityEngine.Random.Range(0, 5);
+            c02character = chosenWord[c02position];
+            foreach (string i in possibleWords)
+            {
+                if (i[c02position] == c02character)
+                {
+                    possibleWordsThisGeneration.Add(i);
+                    wordsLeftThisGeneration++;
+                }
+            }
+            c02position++;
         }
     }
 
