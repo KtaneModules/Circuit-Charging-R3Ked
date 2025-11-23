@@ -197,7 +197,7 @@ GameObject:
   - component: {fileID: 23008965687127194}
   - component: {fileID: 114102783346504530}
   m_Layer: 0
-  m_Name: Cube
+  m_Name: 3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -285,7 +285,7 @@ GameObject:
   - component: {fileID: 23408881455550774}
   - component: {fileID: 114092417414751802}
   m_Layer: 0
-  m_Name: Cube
+  m_Name: 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -703,7 +703,7 @@ GameObject:
   - component: {fileID: 23269006381251510}
   - component: {fileID: 114970326489279364}
   m_Layer: 0
-  m_Name: Cube
+  m_Name: 2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3421,7 +3421,7 @@ Light:
   serializedVersion: 8
   m_Type: 2
   m_Color: {r: 1, g: 0.9724138, b: 0, a: 1}
-  m_Intensity: 1
+  m_Intensity: 0.55
   m_Range: 10
   m_SpotAngle: 30
   m_CookieSize: 10
@@ -3565,6 +3565,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Bomb: {fileID: 114454383462897410}
   Audio: {fileID: 114915473299363512}
+  buttons:
+  - {fileID: 114206743921712810}
+  - {fileID: 114092417414751802}
+  - {fileID: 114970326489279364}
+  - {fileID: 114102783346504530}
   segments:
   - {fileID: 1305803280354552}
   - {fileID: 1705715751929620}
