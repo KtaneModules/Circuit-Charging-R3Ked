@@ -22,7 +22,7 @@ public class circuitCharging : MonoBehaviour {
     static string alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     public GameObject[] segments;
-    public GameObject light;
+    public GameObject Light;
     public GameObject lightEmitter;
     public Material lightOff;
     public Material segmentOff;
@@ -199,11 +199,11 @@ public class circuitCharging : MonoBehaviour {
 
     void toggleLight(bool isOn) {
         if(isOn) {
-            light.GetComponent<MeshRenderer>().material = on;
+            Light.GetComponent<MeshRenderer>().material = on;
         }
         else
         {
-            light.GetComponent<MeshRenderer>().material = lightOff;
+            Light.GetComponent<MeshRenderer>().material = lightOff;
         }
         lightEmitter.SetActive(isOn);
     }
