@@ -22,8 +22,7 @@ public class circuitCharging : MonoBehaviour {
     static string alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     public GameObject[] segments;
-    public GameObject Light;
-    public GameObject lightEmitter;
+    public Light Light;
     public Material lightOff;
     public Material segmentOff;
     public Material on;
@@ -133,7 +132,7 @@ public class circuitCharging : MonoBehaviour {
     }
 
     void Activate() { //Shit that should happen when the bomb arrives (factory)/Lights turn on
-        //toggleLight(true);
+        toggleLight(true);
     }
 
     void Start() { //Shit that you calculate, usually a majority if not all of the module
@@ -199,20 +198,10 @@ public class circuitCharging : MonoBehaviour {
         }
     }
 
-    /*
-
-    void toggleLight(bool isOn) {
-        if(isOn) {
-            Light.GetComponent<MeshRenderer>().material = on;
-        }
-        else
-        {
-            Light.GetComponent<MeshRenderer>().material = lightOff;
-        }
-        lightEmitter.SetActive(isOn);
+    void toggleLight(bool isOn)
+    {
+        Light.enabled = isOn;
     }
-
-    */
 
     void generateHint(int component1, int component2)
     {
