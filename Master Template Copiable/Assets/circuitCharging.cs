@@ -196,7 +196,7 @@ public class circuitCharging : MonoBehaviour {
         else
         {
             //failsafe in case i write the wrong number of digits on accident
-            //not even gonna bother having some custom handling for this situation besides this log message because if it ever does then i'll probably know before the module goes public
+            //not even gonna bother having some custom handling for this situation besides this log message like my other unreachable scenario handlers because if it ever does then i'll probably know before the module goes public
             Debug.LogFormat("you fucked up lol");
         }
     }
