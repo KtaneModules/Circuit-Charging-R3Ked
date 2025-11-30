@@ -7,6 +7,8 @@ using UnityEngine;
 using KModkit;
 using Rnd = UnityEngine.Random;
 using Math = ExMath;
+using UnityEngine.Experimental.UIElements;
+using NUnit.Framework.Constraints;
 
 public class circuitCharging : MonoBehaviour {
 
@@ -109,6 +111,12 @@ public class circuitCharging : MonoBehaviour {
     int wordsLeft;
     int wordsLeftThisGeneration = 9999;
 
+    int[][] forbiddenPairs = new int[2][];
+    int[][] generatedPairs = new int[4][];
+    int generationAttempts = 0;
+    int generationThreshold = wordBank.Length / 2;
+    int hintsGenerated = 0;
+
     void Awake() { //Avoid doing calculations in here regarding edgework. Just use this for setting up buttons for simplicity.
         ModuleId = ModuleIdCounter++;
         GetComponent<KMBombModule>().OnActivate += Activate;
@@ -141,19 +149,68 @@ public class circuitCharging : MonoBehaviour {
 
     void Start() { //Shit that you calculate, usually a majority if not all of the module
         chosenWord = wordBank[UnityEngine.Random.Range(0, wordBank.Length)]; //pick a random word for the solution
-        Debug.LogFormat("[Circuit Charging #{0}] The word chosen is {1}.", ModuleId, chosenWord);
         possibleWords = wordBank.ToList(); //copy the word bank into the possible words list
         wordsLeft = wordBank.Length;
 
-        while (wordsLeftThisGeneration >= wordBank.Length / 2)
+        //this is the only way i could initialize the jagged arrays. the more i use c# the more i want to kill it
+        forbiddenPairs = new int[][] { new int[]{ -1, -1 }, new int[] { -1, -1 } };
+        generatedPairs = new int[][] { new int[] { -1, -1 }, new int[] { -1, -1 }, new int[] { -1, -1 }, new int[] { -1, -1 } };
+
+        //pick two random pairs to be forbidden
+        for (int i = 0; i < 2; i++)
         {
-            generateHint(2, 1); //temp thing for testing the generation, will replace this with a proper module generation thing when i'm done writing the hints themselves
+            while (forbiddenPairs[i][0] == forbiddenPairs[i][1] || forbiddenPairs[i][0] == -1)
+            {
+                forbiddenPairs[i][0] = UnityEngine.Random.Range(0, 3);
+                forbiddenPairs[i][1] = UnityEngine.Random.Range(0, 3);
+            }
         }
-        Debug.Log(wordsLeftThisGeneration);
-        foreach (string i in possibleWordsThisGeneration)
+        
+        //generate the four remaining hints
+        while (hintsGenerated < 4)
         {
-            Debug.Log(i);
+            int[] hintToGenerate = { -1, -1 };
+            while (hintToGenerate[0] == hintToGenerate[1] || hintToGenerate[0] == -1 || generatedPairs.Contains(hintToGenerate) || forbiddenPairs.Contains(hintToGenerate))
+            {
+                hintToGenerate = new int[] {UnityEngine.Random.Range(0, 3), UnityEngine.Random.Range(0, 3)};
+            }
+            generatedPairs[hintsGenerated] = hintToGenerate;
+            generateHint(hintToGenerate[0], hintToGenerate[1]);
+            if (wordsLeftThisGeneration <= generationThreshold && (wordsLeftThisGeneration < wordsLeft || wordsLeft == 1))
+            {
+                wordsLeft = wordsLeftThisGeneration;
+                possibleWords = possibleWordsThisGeneration;
+                generationAttempts = 0;
+                hintsGenerated++;
+                if (hintsGenerated < 3)
+                {
+                    generationThreshold /= 2;
+                }
+                else
+                {
+                    generationThreshold = 1;
+                }
+            }
+            else
+            {
+                generationAttempts++;
+                //if we go enough generation attempts without getting under the threshold then assume we've hit a dead end and reset everything
+                if (generationAttempts >= 6)
+                {
+                    /* 
+                     the below section is what i THOUGHT the culprit of the freezing is but apparently i'm wrong
+                    hintsGenerated = 0;
+                    generationThreshold = wordBank.Length / 2;
+                    generatedPairs = new int[][] { new int[] { -1, -1 }, new int[] { -1, -1 }, new int[] { -1, -1 }, new int[] { -1, -1 } };
+                    //we don't need to reset the c__ variables since they'll be overwritten when we redo the generations anyways
+                    //generate a new word for good measure
+                    chosenWord = wordBank[UnityEngine.Random.Range(0, wordBank.Length)];
+                    */
+                    Debug.Log("oops");
+                }
+            }
         }
+        Debug.LogFormat("[Circuit Charging #{0}] The word chosen is {1}.", ModuleId, chosenWord);
     }
 
     void Update() { //Shit that happens at any point after initialization
