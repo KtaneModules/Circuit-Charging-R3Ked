@@ -3,60 +3,60 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using UnityEditorInternal;
 using UnityEngine;
-using KModkit;
 using Rnd = UnityEngine.Random;
-using Math = ExMath;
-using UnityEngine.Experimental.UIElements;
-using NUnit.Framework.Constraints;
 
-public class circuitCharging : MonoBehaviour {
+public class circuitCharging : MonoBehaviour
+{
 
     public KMBombInfo Bomb;
+    public KMBombModule Module;
     public KMAudio Audio;
 
-    static int ModuleIdCounter = 1;
-    int ModuleId;
+    private int ModuleId;
+    private static int ModuleIdCounter = 1;
     private bool ModuleSolved;
 
     public KMSelectable[] buttons;
 
-    static string alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static string alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     public GameObject[] segments;
     public Light Light;
     public Material lightOff;
     public Material segmentOff;
     public Material on;
-    static string[] letterToSegment = //FUUUUUCK I GOTTA DO THIS NOW
-    {
-        "11000111100010",
-        "10010101001011",
-        "11000000100001",
-        "10010100001011",
-        "11000010100001", //5
-        "11000010100000",
-        "11000001100011",
-        "01000111100010",
-        "10010000001001",
-        "00000100100011", //10
-        "01001010100100",
-        "01000000100001",
-        "01101100100010",
-        "01100100100110",
-        "11000100100011", //15
-        "11000111100000",
-        "11000100100111",
-        "11000111100100",
-        "11000011000011",
-        "10010000001000", //20
-        "01000100100011", 
-        "01001000110000",
-        "01000100110110",
-        "00101000010100",
-        "00101000001000", //25
-        "10001000010001" //ok that wasn't as bad as i thought it would be
+
+    private static readonly bool[][] _segmentArragements = new bool[26][] {
+        new bool[14] { true, true, false, false, false, true, true, true, true, false, false, false, true, false },      //A
+        new bool[14] { true, false, false, true, false, true, false, true, false, false, true, false, true, true },      //B
+        new bool[14] { true, true, false, false, false, false, false, false, true, false, false, false, false, true },   //C
+        new bool[14] { true, false, false, true, false, true, false, false, false, false, true, false, true, true },     //D
+        new bool[14] { true, true, false, false, false, false, true, true, true, false, false, false, false, true },     //E
+        new bool[14] { true, true, false, false, false, false, true, true, true, false, false, false, false, false },    //F
+        new bool[14] { true, true, false, false, false, false, false, true, true, false, false, false, true, true },     //G
+        new bool[14] { false, true, false, false, false, true, true, true, true, false, false, false, true, false },     //H
+        new bool[14] { true, false, false, true, false, false, false, false, false, false, true, false, false, true },   //I
+        new bool[14] { false, false, false, false, false, true, false, false, true, false, false, false, true, true },   //J
+        new bool[14] { false, true, false, false, true, false, true, false, true, false, false, true, false, false },    //K
+        new bool[14] { false, true, false, false, false, false, false, false, true, false, false, false, false, true },  //L
+        new bool[14] { false, true, true, false, true, true, false, false, true, false, false, false, true, false },     //M
+        new bool[14] { false, true, true, false, false, true, false, false, true, false, false, true, true, false },     //N
+        new bool[14] { true, true, false, false, false, true, false, false, true, false, false, false, true, true },     //O
+        new bool[14] { true, true, false, false, false, true, true, true, true, false, false, false, false, false },     //P
+        new bool[14] { true, true, false, false, false, true, false, false, true, false, false, true, true, true },      //Q
+        new bool[14] { true, true, false, false, false, true, true, true, true, false, false, true, false, false },      //R
+        new bool[14] { true, true, false, false, false, false, true, true, false, false, false, false, true, true },     //S
+        new bool[14] { true, false, false, true, false, false, false, false, false, false, true, false, false, false },  //T
+        new bool[14] { false, true, false, false, false, true, false, false, true, false, false, false, true, true },    //U
+        new bool[14] { false, true, false, false, true, false, false, false, true, true, false, false, false, false },   //V
+        new bool[14] { false, true, false, false, false, true, false, false, true, true, false, true, true, false },     //W
+        new bool[14] { false, false, true, false, true, false, false, false, false, true, false, true, false, false },   //X
+        new bool[14] { false, false, true, false, true, false, false, false, false, false, true, false, false, false },  //Y
+        new bool[14] { true, false, false, false, true, false, false, false, false, true, false, false, false, true }    //Z
     };
+
     private static readonly bool[][] brailleList = new string[26] { "100000", "110000", "100100", "100110", "100010", "110100", "110110", "110010", "010100", "010110", "101000", "111000", "101100", "101110", "101010", "111100", "111110", "111010", "011100", "011110", "101001", "111001", "010111", "101101", "101111", "101011" }.Select(i => i.Select(j => j == '1').ToArray()).ToArray(); //braille list stolen from angel hernandez
 
     //the first digit after the c is the first component and the second is the second component
@@ -75,8 +75,6 @@ public class circuitCharging : MonoBehaviour {
 
     static readonly string[] wordBank = new string[]
        {
-                //this is the same word bank linked wordle uses, however i cut a few obscure words for the sake of making it easier to generate a solution and less annoying to find the right word when solving
-                //i don't wanna comb through all of this to find the bad ones so i'm just gonna hope this is fine, i've been removing the bs ones as they pop up
                 "ABACK", "ABIDE", "ABORT", "ABOUT", "ABOVE", "ABUSE", "ABYSS", "ACIDS", "ACORN", "ACRES", "ACTED", "ACTOR", "ACUTE", "ADAPT", "ADDED", "ADIEU", "ADIOS", "ADMIN", "ADOPT", "ADORE", "ADORN", "ADULT", "AFFIX", "AFTER", "AGAIN", "AGENT", "AGILE", "AGING", "AGONY", "AGORA", "AGREE", "AHEAD", "AIDED", "AIMED", "AIOLI", "AIRED", "AISLE", "ALARM", "ALBUM", "ALERT", "ALGAE", "ALIAS", "ALIBI", "ALIEN", "ALIGN", "ALIKE", "ALIVE", "ALLAY", "ALLEY", "ALLOT", "ALLOW", "ALLOY", "ALOFT", "ALONE", "ALONG", "ALOOF", "ALOUD", "ALPHA", "ALTAR", "ALTER", "AMASS", "AMAZE", "AMBER", "AMBLE", "AMEND", "AMISH", "AMISS", "AMONG", "AMPLE", "AMUSE", "ANGEL", "ANGER", "ANGLE", "ANGLO", "ANGRY", "ANGST", "ANIME", "ANION", "ANISE", "ANKLE", "ANNEX", "ANNOY", "ANNUL", "ANTIC", "ANVIL", "AORTA", "APART", "APNEA", "APPLE", "APPLY", "APRON", "AREAS", "ARENA", "ARGUE", "ARISE", "ARMED", "ARMOR", "AROMA", "AROSE", "ARRAY", "ARROW", "ARSON", "ASHEN", "ASHES", "ASIAN", "ASIDE", "ASKED", "ASSAY", "ASSET", "ASTER", "ASTIR", "ATOLL", "ATOMS", "ATONE", "ATTIC", "AUDIO", "AUDIT", "AUGUR", "AUNTY", "AVAIL", "AVIAN", "AVOID", "AWAIT", "AWAKE", "AWARD", "AWARE", "AWASH", "AWFUL", "AWOKE", "AXIAL", "AXIOM", "AXION", "AZTEC",
                 "BACKS", "BACON", "BADGE", "BADLY", "BAKED", "BAKER", "BALLS", "BANDS", "BANKS", "BARGE", "BARON", "BASED", "BASES", "BASIC", "BASIL", "BASIN", "BASIS", "BATCH", "BATHS", "BATTY", "BEACH", "BEADS", "BEAMS", "BEANS", "BEARD", "BEARS", "BEAST", "BEECH", "BEERS", "BEGAN", "BEGIN", "BEGUN", "BEING", "BELLS", "BELLY", "BELOW", "BELTS", "BENCH", "BERRY", "BIBLE", "BIDET", "BIGHT", "BIKES", "BILGE", "BILLS", "BINGE", "BINGO", "BIOME", "BIRCH", "BIRDS", "BIRTH", "BISON", "BITCH", "BITER", "BLACK", "BLADE", "BLAME", "BLAND", "BLANK", "BLARE", "BLAST", "BLAZE", "BLEAK", "BLEAT", "BLEED", "BLEEP", "BLEND", "BLESS", "BLIMP", "BLIND", "BLING", "BLINK", "BLISS", "BLITZ", "BLOCK", "BLOKE", "BLOND", "BLOOD", "BLOOM", "BLOOP", "BLOWN", "BLOWS", "BLUES", "BLUFF", "BLUNT", "BLUSH", "BOARD", "BOATS", "BOGGY", "BOGUS", "BOLTS", "BOMBS", "BONDS", "BONED", "BONES", "BONNY", "BONUS", "BOOKS", "BOOST", "BOOTH", "BOOTS", "BORAX", "BORED", "BORER", "BORNE", "BORON", "BOTCH", "BOUGH", "BOULE", "BOUND", "BOWED", "BOWEL", "BOWLS", "BOXED", "BOXER", "BOXES", "BRACE", "BRAID", "BRAIN", "BRAKE", "BRAND", "BRASH", "BRASS", "BRAVE", "BRAWL", "BRAWN", "BRAZE", "BREAD", "BREAK", "BREAM", "BREED", "BRIAR", "BRIBE", "BRICK", "BRIDE", "BRIEF", "BRIER", "BRINE", "BRING", "BRINK", "BRINY", "BRISK", "BROAD", "BROIL", "BROKE", "BROOK", "BROOM", "BROTH", "BROWN", "BROWS", "BRUNT", "BRUSH", "BRUTE", "BUCKS", "BUDDY", "BUDGE", "BUGGY", "BUILD", "BUILT", "BULBS", "BULGE", "BULKY", "BULLS", "BUMPY", "BUNCH", "BUNNY", "BURNS", "BURNT", "BURST", "BUSES", "BUYER", "BUZZY", "BYLAW", "BYWAY",
                 "CABBY", "CABIN", "CABLE", "CACHE", "CAIRN", "CAKES", "CALLS", "CALVE", "CAMPS", "CAMPY", "CANAL", "CANDY", "CANED", "CANNY", "CANOE", "CANON", "CARDS", "CARED", "CARER", "CARES", "CARGO", "CAROL", "CARRY", "CARVE", "CASED", "CASES", "CASTE", "CATCH", "CATER", "CAULK", "CAUSE", "CAVES", "CEASE", "CEDED", "CELLS", "CENTS", "CHAFE", "CHAFF", "CHAIN", "CHAIR", "CHALK", "CHAMP", "CHANT", "CHAOS", "CHAPS", "CHARM", "CHART", "CHARY", "CHASE", "CHASM", "CHEAP", "CHEAT", "CHECK", "CHEEK", "CHEER", "CHEMO", "CHESS", "CHEST", "CHICK", "CHIDE", "CHIEF", "CHILD", "CHILI", "CHILL", "CHIME", "CHINA", "CHIPS", "CHOIR", "CHORD", "CHORE", "CHOSE", "CHUCK", "CHUNK", "CHUTE", "CIDER", "CIGAR", "CINCH", "CITED", "CITES", "CIVET", "CIVIC", "CIVIL", "CLADE", "CLAIM", "CLANK", "CLASH", "CLASS", "CLAWS", "CLEAN", "CLEAR", "CLEAT", "CLERK", "CLICK", "CLIFF", "CLIMB", "CLING", "CLOAK", "CLOCK", "CLONE", "CLOSE", "CLOTH", "CLOUD", "CLOUT", "CLOVE", "CLOWN", "CLUBS", "CLUCK", "CLUES", "CLUNG", "CLUNK", "COACH", "COAST", "COATS", "COCOA", "CODES", "COINS", "COLIC", "COLON", "COLOR", "COMAL", "COMES", "COMIC", "COMMA", "CONCH", "CONIC", "CORAL", "CORGI", "CORNY", "CORPS", "COSTS", "COTTA", "COUCH", "COUGH", "COULD", "COUNT", "COURT", "COVEN", "COVER", "COYLY", "CRACK", "CRAFT", "CRANE", "CRANK", "CRASH", "CRASS", "CRATE", "CRAVE", "CRAWL", "CRAZY", "CREAK", "CREAM", "CREED", "CREEK", "CREPT", "CREST", "CREWS", "CRIED", "CRIES", "CRIME", "CRISP", "CRONE", "CROPS", "CROSS", "CROWD", "CROWN", "CRUDE", "CRUEL", "CRUSH", "CRUST", "CRYPT", "CUBAN", "CUBBY", "CUBIC", "CUBIT", "CUMIN", "CURLS", "CURLY", "CURRY", "CURSE", "CURVE", "CUTIE", "CYCLE", "CYNIC", "CZECH",
@@ -102,12 +100,10 @@ public class circuitCharging : MonoBehaviour {
                 "WAGES", "WAGON", "WAIST", "WAITS", "WAIVE", "WALKS", "WALLS", "WALTZ", "WANTS", "WARDS", "WARES", "WARNS", "WASTE", "WATCH", "WATER", "WAVED", "WAVES", "WAXEN", "WEARS", "WEARY", "WEAVE", "WEBBY", "WEDGE", "WEEDS", "WEEKS", "WEIGH", "WEIRD", "WELLS", "WELSH", "WETLY", "WHALE", "WHEAT", "WHEEL", "WHERE", "WHICH", "WHILE", "WHINE", "WHISK", "WHITE", "WHOLE", "WHORL", "WHOSE", "WIDEN", "WIDER", "WIDOW", "WIDTH", "WIELD", "WILLS", "WIMPY", "WINCE", "WINCH", "WINDS", "WINDY", "WINES", "WINGS", "WIPED", "WIRED", "WIRES", "WISER", "WITCH", "WITTY", "WIVES", "WOKEN", "WOMAN", "WOMEN", "WOODS", "WORDS", "WORKS", "WORLD", "WORMS", "WORMY", "WORRY", "WORSE", "WORST", "WORTH", "WOULD", "WOUND", "WOVEN", "WRATH", "WRECK", "WRIST", "WRITE", "WRONG", "WROTE",
                 "YACHT", "YARDS", "YAWNS", "YEARN", "YEARS", "YEAST", "YELLS", "YIELD", "YODEL", "YOUNG", "YOURS", "YOUTH", "YUMMY",
                 "ZEBRA", "ZILCH", "ZONES"
-           //i feel like i should mention that there originally was an attempt to remove inappropriate words like "bitch" and "penis" however apparently quinn missed the word "boner" since it used to be in here
-           //go check the linked wordle source code. it's in there.
        };
     string chosenWord;
     List<string> possibleWords;
-    List<string> possibleWordsThisGeneration = new List<string> {"adfahdsjgasldkfghasdgf"}; //this random keysmash is added to the list at the start so that c# doesn't shit its pants later down the line when i need to clear it to generate hints
+    List<string> possibleWordsThisGeneration = new List<string> { "adfahdsjgasldkfghasdgf" }; //this random keysmash is added to the list at the start so that c# doesn't shit its pants later down the line when i need to clear it to generate hints
     int wordsLeft;
     int wordsLeftThisGeneration = 9999;
 
@@ -117,146 +113,85 @@ public class circuitCharging : MonoBehaviour {
     int generationThreshold = wordBank.Length / 2;
     int hintsGenerated = 0;
 
-    void Awake() { //Avoid doing calculations in here regarding edgework. Just use this for setting up buttons for simplicity.
+    void Awake()
+    {
         ModuleId = ModuleIdCounter++;
         GetComponent<KMBombModule>().OnActivate += Activate;
-        foreach (KMSelectable Button in buttons)
+        for (int i = 0; i < buttons.Length; i++)
         {
-            Button.OnInteract += delegate () { ButtonPress(Button); return false; };
+            int j = i;
+            buttons[i].OnInteract += delegate ()
+            {
+                ButtonPress(j);
+                return false;
+            };
         }
-        /*
-        foreach (KMSelectable object in keypad) {
-            object.OnInteract += delegate () { keypadPress(object); return false; };
-        }
-        */
-
-        //button.OnInteract += delegate () { buttonPress(); return false; };
 
     }
 
-    void ButtonPress(KMSelectable button)
+    void ButtonPress(int button)
     {
 
     }
 
-    void OnDestroy() { //Shit you need to do when the bomb ends
-
-    }
-
-    void Activate() { //Shit that should happen when the bomb arrives (factory)/Lights turn on
+    void Activate()
+    {
         toggleLight(true);
     }
 
-    void Start() { //Shit that you calculate, usually a majority if not all of the module
-        chosenWord = wordBank[UnityEngine.Random.Range(0, wordBank.Length)]; //pick a random word for the solution
-        possibleWords = wordBank.ToList(); //copy the word bank into the possible words list
-        wordsLeft = wordBank.Length;
+    void Start()
+    {
+        chosenWord = wordBank[Rnd.Range(0, wordBank.Length)];
+        Debug.Log("<> Chosen word: " + chosenWord);
 
-        //this is the only way i could initialize the jagged arrays. the more i use c# the more i want to kill it
-        forbiddenPairs = new int[][] { new int[]{ -1, -1 }, new int[] { -1, -1 } };
-        generatedPairs = new int[][] { new int[] { -1, -1 }, new int[] { -1, -1 }, new int[] { -1, -1 }, new int[] { -1, -1 } };
+        // Light-Speaker Hint
+        var li_sp_ix = Rnd.Range(0, chosenWord.Length - 1);
+        var li_sp_letters = new[] { chosenWord[li_sp_ix], chosenWord[li_sp_ix + 1] }.Shuffle();
+        Debug.Log("<> Light-Speaker: " + li_sp_letters.Join(" "));
 
-        //pick two random pairs to be forbidden
-        for (int i = 0; i < 2; i++)
+        // Light-Letter Hint
+        var li_le = Rnd.Range(0, chosenWord.Length);
+        var li_le_letter = chosenWord[li_le];
+        var li_le_flashes = li_le + 1;
+        Debug.Log("<> Light-Letter: " + li_le_letter + ", " + li_le_flashes);
+
+        // Speaker-Light Hint
+        var sp_li_correctLetterIxs = Enumerable.Range(0, 5).ToArray().Shuffle().Take(2).OrderBy(i => i).ToArray();
+        var sp_li_letters = new char[5];
+        for (int i = 0; i < 5; i++)
         {
-            while (forbiddenPairs[i][0] == forbiddenPairs[i][1] || forbiddenPairs[i][0] == -1)
+            char sp_li_randomLetter;
+            if (!sp_li_correctLetterIxs.Contains(i))
             {
-                forbiddenPairs[i][0] = UnityEngine.Random.Range(0, 3);
-                forbiddenPairs[i][1] = UnityEngine.Random.Range(0, 3);
-            }
-        }
-        
-        //generate the four remaining hints
-        while (hintsGenerated < 4)
-        {
-            int[] hintToGenerate = { -1, -1 };
-            while (hintToGenerate[0] == hintToGenerate[1] || hintToGenerate[0] == -1 || generatedPairs.Contains(hintToGenerate) || forbiddenPairs.Contains(hintToGenerate))
-            {
-                hintToGenerate = new int[] {UnityEngine.Random.Range(0, 3), UnityEngine.Random.Range(0, 3)};
-            }
-            generatedPairs[hintsGenerated] = hintToGenerate;
-            generateHint(hintToGenerate[0], hintToGenerate[1]);
-            if (wordsLeftThisGeneration <= generationThreshold && (wordsLeftThisGeneration < wordsLeft || wordsLeft == 1))
-            {
-                wordsLeft = wordsLeftThisGeneration;
-                possibleWords = possibleWordsThisGeneration;
-                generationAttempts = 0;
-                hintsGenerated++;
-                if (hintsGenerated < 3)
-                {
-                    generationThreshold /= 2;
-                }
-                else
-                {
-                    generationThreshold = 1;
-                }
+                var sp_li_possibleLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".Except(new[] { chosenWord[i] });
+                sp_li_randomLetter = sp_li_possibleLetters.PickRandom();
+                sp_li_letters[i] = sp_li_randomLetter;
             }
             else
             {
-                generationAttempts++;
-                //if we go enough generation attempts without getting under the threshold then assume we've hit a dead end and reset everything
-                if (generationAttempts >= 6)
-                {
-                    /* 
-                     the below section is what i THOUGHT the culprit of the freezing is but apparently i'm wrong
-                    hintsGenerated = 0;
-                    generationThreshold = wordBank.Length / 2;
-                    generatedPairs = new int[][] { new int[] { -1, -1 }, new int[] { -1, -1 }, new int[] { -1, -1 }, new int[] { -1, -1 } };
-                    //we don't need to reset the c__ variables since they'll be overwritten when we redo the generations anyways
-                    //generate a new word for good measure
-                    chosenWord = wordBank[UnityEngine.Random.Range(0, wordBank.Length)];
-                    */
-                    Debug.Log("oops");
-                }
+                sp_li_letters[i] = chosenWord[i];
             }
+            if (sp_li_letters[i] < 'F')
+                sp_li_letters[i] = (char)(sp_li_letters[i] + 21);
+            else
+                sp_li_letters[i] = (char)(sp_li_letters[i] - 5);
         }
-        Debug.LogFormat("[Circuit Charging #{0}] The word chosen is {1}.", ModuleId, chosenWord);
+        Debug.Log("<> Speaker-Light: " + sp_li_letters.Join(", "));
+
+        // Speaker-Letter Hint
+        var sp_le_lastLetter = chosenWord.Last() - 'A';
+        var sp_le_correctSegments = _segmentArragements[sp_le_lastLetter];
+        var sp_le_randomBeeps = Enumerable.Range(0, 14).Select(i => Rnd.Range(0, 2) == 0).ToArray();
+        var sp_le_adjustedSegments = Enumerable.Range(0, 14).Select(i => sp_le_correctSegments[i] ^ sp_le_randomBeeps[i]).ToArray();
+        Debug.LogFormat("<> Speaker-Letter: {0} {1}", sp_le_adjustedSegments.Select(i => i ? "1" : "0").Join(""), sp_le_randomBeeps.Select(i => i ? "1" : "0").Join(""));
+        return;
     }
 
-    void Update() { //Shit that happens at any point after initialization
-
-    }
-
-    void Solve() {
-        GetComponent<KMBombModule>().HandlePass();
-    }
-
-    void Strike() {
-        GetComponent<KMBombModule>().HandleStrike();
-    }
-
-    void displaySegments(string litSegments)
+    void displaySegments(bool[] litSegments)
     {
-        //takes 14 digits, either 0 or 1, or a letter. each digit corresponds to a different segment where 0 is off and 1 is on.
-
-        if (litSegments.Length == 1)
+        for (int i = 0; i < litSegments.Length; i++)
         {
-            //display a certain letter
-            displaySegments(letterToSegment[alphabet.IndexOf(litSegments)]);
-        }
-        else if (litSegments.Length == 0)
-        {
-            //clear the display
-            displaySegments("00000000000000");
-        }
-        else if (litSegments.Length == 14)
-        {
-            for (int i = 0; i < 14; i++)
-            {
-                if (litSegments[i] == '0') {
-                    segments[i].GetComponent<MeshRenderer>().material = segmentOff;
-                }
-                else
-                {
-                    segments[i].GetComponent<MeshRenderer>().material = on;
-                }
-            }
-        }
-        else
-        {
-            //failsafe in case i write the wrong number of digits on accident
-            //not even gonna bother having some custom handling for this situation besides this log message like my other unreachable scenario handlers because if it ever does then i'll probably know before the module goes public
-            Debug.LogFormat("you fucked up lol");
+            segments[i].GetComponent<MeshRenderer>().material = litSegments[i] ? on : segmentOff;
         }
     }
 
@@ -265,198 +200,17 @@ public class circuitCharging : MonoBehaviour {
         Light.enabled = isOn;
     }
 
-    void generateHint(int component1, int component2) // Evil function that is evil and scary because it is Big.
-    {
-        //reset stuff from last hint generation
-        possibleWordsThisGeneration.Clear();
-        wordsLeftThisGeneration = 0;
-
-        //0 is light, 1 is speaker, and 2 is letter display
-        if (component1 == 0 && component2 == 1)
-        {
-            int startingCharacter = UnityEngine.Random.Range(0, 4);
-            c01characters = new string[] { chosenWord[startingCharacter].ToString(), chosenWord[startingCharacter + 1].ToString() }; // i don't want to use c# anymore. this language fucking sucks
-
-            //loop through each word left and if it's a possibility
-            foreach (string i in possibleWords)
-            {
-                if (i.Contains(c01characters[0] + c01characters[1]) || i.Contains(c01characters[1] + c01characters[0]))
-                {
-                    possibleWordsThisGeneration.Add(i);
-                    wordsLeftThisGeneration++;
-                }
-            }
-
-            //50% chance to flip the two characters so the order doesn't matter
-            if (UnityEngine.Random.Range(0, 2) == 0)
-            {
-                c01characters = new string[] { c01characters[1], c01characters[0] };
-            }
-        }
-        else if (component1 == 0 && component2 == 2)
-        {
-            c02position = UnityEngine.Random.Range(0, 5);
-            c02character = chosenWord[c02position];
-            foreach (string i in possibleWords)
-            {
-                if (i[c02position] == c02character)
-                {
-                    possibleWordsThisGeneration.Add(i);
-                    wordsLeftThisGeneration++;
-                }
-            }
-            c02position++;
-        }
-        else if (component1 == 1 && component2 == 0)
-        {
-            c10characters = new string[] { "", "", "", "", "" };
-            c10positions = new int[] { -1, -1 };
-
-            //get two random positions for the letters to be in
-            while (c10positions[0] == c10positions[1])
-            {
-                c10positions[0] = UnityEngine.Random.Range(0, 5);
-                c10positions[1] = UnityEngine.Random.Range(0, 5);
-            }
-            c10characters[c10positions[0]] = chosenWord[c10positions[0]].ToString();
-            c10characters[c10positions[1]] = chosenWord[c10positions[1]].ToString();
-
-            //fill the remaining slots with decoy letters
-            for (int i = 0; i < 5; i++)
-            {
-                if (c10characters[i] == "")
-                {
-                    while (c10characters[i] == chosenWord[i].ToString() || c10characters[i] == "")
-                    {
-                        c10characters[i] = alphabet[UnityEngine.Random.Range(0, 26)].ToString();
-                    }
-                }
-            }
-            //check for valid words
-            foreach (string i in possibleWords)
-            {
-                int matches = 0;
-                for (int j = 0; j < 5; j++)
-                {
-                    if (i[j].ToString() == c10characters[j])
-                    {
-                        matches++;
-                    }
-                }
-                if (matches >= 2)
-                {
-                    possibleWordsThisGeneration.Add(i);
-                    wordsLeftThisGeneration++;
-                }
-            }
-            //caesar shift
-            Debug.Log(c10characters[0] + c10characters[1] + c10characters[2] + c10characters[3] + c10characters[4]);
-            c10shift = UnityEngine.Random.Range(1, 6);
-            for (int i = 0; i < 5; i++)
-            {
-                int position = alphabet.IndexOf(c10characters[i]); // get the position of the character being shifted in the alphabet
-                position -= c10shift;
-                if (position < 0)
-                {
-                    position += 26;
-                }
-                c10characters[i] = alphabet[position].ToString();
-            } //everything so far has worked first try somehow. am i dreaming or something
-        } //cry me a river, never nesters.
-        else if (component1 == 1 && component2 == 2)
-        {
-            //convert the last letter to segments
-            c12segments = letterToSegment[alphabet.IndexOf(chosenWord[4].ToString())];
-            Debug.Log(c12segments);
-
-            //randomly generate flipped segments and flip the corresponding ones
-            for (int i = 0; i < 14; i++)
-            {
-                string thisSegmentFlip = UnityEngine.Random.Range(0, 2).ToString();
-                c12flips += thisSegmentFlip;
-                if (thisSegmentFlip == "1")
-                {
-                    if (c12segments[i] == '0')
-                    {
-                        c12segments = c12segments.Remove(i, 1).Insert(i, "1");
-                    }
-                    else
-                    {
-                        c12segments = c12segments.Remove(i, 1).Insert(i, "0");
-                    }
-                }
-            }
-            foreach (string i in possibleWords)
-            {
-                if (i[4] == chosenWord[4])
-                {
-                    possibleWordsThisGeneration.Add(i);
-                    wordsLeftThisGeneration++;
-
-                }
-            }
-        }
-        else if (component1 == 2 && component2 == 0)
-        {
-            foreach (string i in possibleWords)
-            {
-                if (i[0] == chosenWord[0]) //i'm just now realizing how much of a mess this entire module's code is but i don't really want to refactor this
-                                           //if "the rapidly dwindling sanity of ktane programmers as expressed through code comments" ever gets made then i'm probably ending up on it
-                {
-                    possibleWordsThisGeneration.Add(i);
-                    wordsLeftThisGeneration++;
-
-                }
-            }
-            string firstLetter = chosenWord[0].ToString();
-            c20character = alphabet[UnityEngine.Random.Range(0, 26)].ToString();
-            bool[] characterBraille1 = brailleList[alphabet.IndexOf(firstLetter)]; //intellicode genuinely suggested to set this to a single integer (the length of some variable i forget) while i was writing this. yeah i'm turning this shit off forever
-            bool[] characterBraille2 = brailleList[alphabet.IndexOf(c20character)];
-            for (int i = 0; i < 6; i++)
-            {
-                c20flips[i] = (characterBraille1[i] ^ characterBraille2[i]);
-            }
-        }
-        else if (component1 == 2 && component2 == 1)
-        {
-            //pick two random positions and a character
-            c21positions[0] = UnityEngine.Random.Range(0, 5);
-            c21character = alphabet[c21positions[0]].ToString();
-            while (c21positions[1] == c21positions[0] || c21positions[1] == -1)
-            {
-                c21positions[1] = UnityEngine.Random.Range(0, 5);
-            }
-            foreach (string i in possibleWords)
-            {
-                if (i[c21positions[0]].ToString() == c21character || i[c21positions[1]].ToString() == c21character)
-                {
-                    possibleWordsThisGeneration.Add(i);
-                    wordsLeftThisGeneration++;
-
-                }
-            }
-            //randomly swap the two
-            if (UnityEngine.Random.Range(0,2) == 0)
-            {
-                c21positions = new int[] {c21positions[1], c21positions[0]};
-            }
-        }
-        else
-        {
-            //Uh oh.
-            //eh whatever someone's gonna notice if this happens eventually
-        }
-    } //Function is... OVER!!!
-
 #pragma warning disable 414
-   private readonly string TwitchHelpMessage = @"Use !{0} to do something.";
+    private readonly string TwitchHelpMessage = @"Use !{0} to do something.";
 #pragma warning restore 414
 
-   IEnumerator ProcessTwitchCommand (string Command) {
-      yield return null;
-   }
+    IEnumerator ProcessTwitchCommand(string Command)
+    {
+        yield return null;
+    }
 
-   IEnumerator TwitchHandleForcedSolve () {
-      yield return null;
-   }
+    IEnumerator TwitchHandleForcedSolve()
+    {
+        yield return null;
+    }
 }
