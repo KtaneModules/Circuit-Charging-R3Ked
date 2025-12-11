@@ -209,6 +209,7 @@ public class circuitCharging : MonoBehaviour
         KeyBack = 27,
         KeyUnk = -1
     }
+    //stealing linked wordle's keyboard support implementation here
     static readonly KeyIDx[] allUsedKeyIdxes = new[] {
         KeyIDx.KeyA, KeyIDx.KeyB, KeyIDx.KeyC, KeyIDx.KeyD, KeyIDx.KeyE, KeyIDx.KeyF, KeyIDx.KeyG,
         KeyIDx.KeyH, KeyIDx.KeyI, KeyIDx.KeyJ, KeyIDx.KeyK, KeyIDx.KeyL, KeyIDx.KeyM, KeyIDx.KeyN,
@@ -216,6 +217,8 @@ public class circuitCharging : MonoBehaviour
         KeyIDx.KeyV, KeyIDx.KeyW, KeyIDx.KeyX, KeyIDx.KeyY, KeyIDx.KeyZ, KeyIDx.KeySub, KeyIDx.KeyBack, };
     string[] currentInput = new string[5];
     int lettersInputted = 0;
+    public KMBombModule modSelf;
+    bool modFocused = false;
 
     void Awake()
     {
@@ -230,7 +233,6 @@ public class circuitCharging : MonoBehaviour
                 return false;
             };
         }
-
     }
 
     void ButtonPress(int button)
@@ -276,6 +278,8 @@ public class circuitCharging : MonoBehaviour
 
     void Start()
     {
+        modSelf.GetComponent<KMSelectable>().OnFocus += delegate { Debug.LogFormat("hi"); };
+        modSelf.GetComponent<KMSelectable>().OnDefocus += delegate { modFocused = false; Debug.LogFormat("hi"); }; //work goddamnit
         string finalSolution = null;
         int attempts = 0;
 
