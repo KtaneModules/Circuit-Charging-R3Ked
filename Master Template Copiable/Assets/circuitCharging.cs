@@ -177,48 +177,19 @@ public class circuitCharging : MonoBehaviour
 
     public TextMesh[] inputDisplays;
 
-    public enum KeyIDx
-    {
-        KeyA = 0,
-        KeyB = 1,
-        KeyC = 2,
-        KeyD = 3,
-        KeyE = 4,
-        KeyF = 5,
-        KeyG = 6,
-        KeyH = 7,
-        KeyI = 8,
-        KeyJ = 9,
-        KeyK = 10,
-        KeyL = 11,
-        KeyM = 12,
-        KeyN = 13,
-        KeyO = 14,
-        KeyP = 15,
-        KeyQ = 16,
-        KeyR = 17,
-        KeyS = 18,
-        KeyT = 19,
-        KeyU = 20,
-        KeyV = 21,
-        KeyW = 22,
-        KeyX = 23,
-        KeyY = 24,
-        KeyZ = 25,
-        KeySub = 26,
-        KeyBack = 27,
-        KeyUnk = -1
-    }
-    //stealing linked wordle's keyboard support implementation here
-    static readonly KeyIDx[] allUsedKeyIdxes = new[] {
-        KeyIDx.KeyA, KeyIDx.KeyB, KeyIDx.KeyC, KeyIDx.KeyD, KeyIDx.KeyE, KeyIDx.KeyF, KeyIDx.KeyG,
-        KeyIDx.KeyH, KeyIDx.KeyI, KeyIDx.KeyJ, KeyIDx.KeyK, KeyIDx.KeyL, KeyIDx.KeyM, KeyIDx.KeyN,
-        KeyIDx.KeyO, KeyIDx.KeyP, KeyIDx.KeyQ, KeyIDx.KeyR, KeyIDx.KeyS, KeyIDx.KeyT, KeyIDx.KeyU,
-        KeyIDx.KeyV, KeyIDx.KeyW, KeyIDx.KeyX, KeyIDx.KeyY, KeyIDx.KeyZ, KeyIDx.KeySub, KeyIDx.KeyBack, };
     string[] currentInput = new string[5];
     int lettersInputted = 0;
     public KMBombModule modSelf;
     bool modFocused = false;
+
+    private KeyCode[] typableKeys =
+{
+        KeyCode.Q, KeyCode.W, KeyCode.E, KeyCode.R, KeyCode.T, KeyCode.Y, KeyCode.U, KeyCode.I, KeyCode.O, KeyCode.P,
+        KeyCode.A, KeyCode.S, KeyCode.D, KeyCode.F, KeyCode.G, KeyCode.H, KeyCode.J, KeyCode.K, KeyCode.L,
+        KeyCode.Z, KeyCode.X, KeyCode.C, KeyCode.V, KeyCode.B, KeyCode.N, KeyCode.M,
+        KeyCode.Backspace, KeyCode.Return
+    };
+    const string keyboardLettersInOrder = "QWERTYUIOPASDFGHJKLZXCVBNM";
 
     void Awake()
     {
@@ -278,8 +249,8 @@ public class circuitCharging : MonoBehaviour
 
     void Start()
     {
-        modSelf.GetComponent<KMSelectable>().OnFocus += delegate { Debug.LogFormat("hi"); };
-        modSelf.GetComponent<KMSelectable>().OnDefocus += delegate { modFocused = false; Debug.LogFormat("hi"); }; //work goddamnit
+        modSelf.GetComponent<KMSelectable>().OnFocus += delegate { modFocused = true; };
+        modSelf.GetComponent<KMSelectable>().OnDefocus += delegate { modFocused = false; };
         string finalSolution = null;
         int attempts = 0;
 
@@ -453,6 +424,46 @@ public class circuitCharging : MonoBehaviour
                 le_sp_letterIndex + 1,
                 le_sp_otherPosition + 1,
                 le_sp_letter);
+    }
+
+    void Update()
+    {
+        if (modFocused)
+        {
+            for (int i = 0; i < typableKeys.Count(); i++) //this for loop and if loop combined check the key the user pressed
+            {
+                if (Input.GetKeyDown(typableKeys[i]) && ModuleSolved == false)
+                {
+                    if (i < 26 && lettersInputted < 5) //player presses a letter key
+                    {
+                        currentInput[lettersInputted] = keyboardLettersInOrder[i].ToString();
+                        inputDisplays[lettersInputted].text = keyboardLettersInOrder[i].ToString();
+                        lettersInputted++;
+                    }
+                    else if (i == 26 && lettersInputted > 0) //player presses backspace
+                    {
+                        lettersInputted--;
+                        currentInput[lettersInputted] = "";
+                        inputDisplays[lettersInputted].text = "";
+                    }
+                    else if (i == 27 && lettersInputted == 5) //player presses enter
+                    {
+                        Debug.LogFormat("[Circuit Charging #{0}] You submitted {1}.", ModuleId, currentInput[0] + currentInput[1] + currentInput[2] + currentInput[3] + currentInput[4]); //terrible way of doing this i know
+                        if (currentInput[0] + currentInput[1] + currentInput[2] + currentInput[3] + currentInput[4] == chosenWord)
+                        {
+                            Module.HandlePass();
+                            Debug.LogFormat("[Circuit Charging #{0}] That is correct. Module solved.", ModuleId);
+                            ModuleSolved = true;
+                        }
+                        else
+                        {
+                            Module.HandleStrike();
+                            Debug.LogFormat("[Circuit Charging #{0}] That is wrong. Strike!", ModuleId);
+                        }
+                    }
+                }
+            }
+        }
     }
 
 
