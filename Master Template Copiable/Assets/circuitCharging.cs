@@ -182,6 +182,11 @@ public class circuitCharging : MonoBehaviour
     public KMBombModule modSelf;
     bool modFocused = false;
 
+    public GameObject[] resistors;
+    public GameObject[] resistorLocations;
+    int[] currentSelection = { -1, -1 };
+    bool showingHint = false;
+
     private KeyCode[] typableKeys =
 {
         KeyCode.Q, KeyCode.W, KeyCode.E, KeyCode.R, KeyCode.T, KeyCode.Y, KeyCode.U, KeyCode.I, KeyCode.O, KeyCode.P,
@@ -208,7 +213,39 @@ public class circuitCharging : MonoBehaviour
 
     void ButtonPress(int button)
     {
+        //interaction punch and stuff
+        buttons[button].AddInteractionPunch();
+        Audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonPress, buttons[button].transform);
 
+        if (button > 0) //player places or removes a resistor
+        {
+            if (Array.IndexOf(currentSelection, button) == -1 && (currentSelection[0] == -1 || currentSelection[1] == -1)) //should check if the player is placing a resistor on an empty spot and both resistors haven't been places
+            {
+                int resistorToPlace = Array.IndexOf(currentSelection, -1); //get the first unplaced resistor
+                currentSelection[resistorToPlace] = button;
+
+                //visually move the resistor to the spot pressed
+                resistors[resistorToPlace].transform.position = resistorLocations[button - 1].transform.position;
+                resistors[resistorToPlace].SetActive(true);
+            }
+            else if (Array.IndexOf(currentSelection, button) != -1)
+            {
+                //basically the same stuff as above
+                int resistorToRemove = Array.IndexOf(currentSelection, button);
+                currentSelection[resistorToRemove] = -1;
+                resistors[resistorToRemove].SetActive(false);
+            }
+        }
+        else if (ModuleSolved == false) //player presses the charge button and module not solved (keeping the unsolved part for potential souv support)
+        {
+            StartCoroutine(ShowHint());
+        }
+    }
+
+    IEnumerator ShowHint()
+    {
+        Debug.Log("hi");
+        yield return null; //silence the compiler
     }
 
     void Activate()
@@ -448,7 +485,7 @@ public class circuitCharging : MonoBehaviour
                     }
                     else if (i == 27 && lettersInputted == 5) //player presses enter
                     {
-                        Debug.LogFormat("[Circuit Charging #{0}] You submitted {1}.", ModuleId, currentInput[0] + currentInput[1] + currentInput[2] + currentInput[3] + currentInput[4]); //terrible way of doing this i know
+                        Debug.LogFormat("[Circuit Charging #{0}] You submitted {1}.", ModuleId, currentInput[0] + currentInput[1] + currentInput[2] + currentInput[3] + currentInput[4]); //for loops are for losers
                         if (currentInput[0] + currentInput[1] + currentInput[2] + currentInput[3] + currentInput[4] == chosenWord)
                         {
                             Module.HandlePass();

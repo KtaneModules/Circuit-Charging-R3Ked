@@ -367,7 +367,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!1 &1301761774745872
 GameObject:
   m_ObjectHideFlags: 1
@@ -790,7 +790,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!1 &1544412542851584
 GameObject:
   m_ObjectHideFlags: 1
@@ -4951,7 +4951,11 @@ MonoBehaviour:
   Bomb: {fileID: 114139298765362128}
   Module: {fileID: 114168316975977350}
   Audio: {fileID: 114184948946601568}
-  buttons: []
+  buttons:
+  - {fileID: 114900704353352636}
+  - {fileID: 114470256089095902}
+  - {fileID: 114985084378207304}
+  - {fileID: 114236494874130478}
   segments:
   - {fileID: 1711439145094686}
   - {fileID: 1774322604848540}
@@ -4978,6 +4982,13 @@ MonoBehaviour:
   - {fileID: 102767773872985166}
   - {fileID: 102988003644163866}
   modSelf: {fileID: 114168316975977350}
+  resistors:
+  - {fileID: 1296813794571720}
+  - {fileID: 1537549482212424}
+  resistorLocations:
+  - {fileID: 1773207668177628}
+  - {fileID: 1334348612500360}
+  - {fileID: 1001408847646964}
 --- !u!114 &114834511184902758
 MonoBehaviour:
   m_ObjectHideFlags: 1
