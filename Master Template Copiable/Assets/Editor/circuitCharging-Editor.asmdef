@@ -1,0 +1,10 @@
+{
+  "name": "circuitCharging-Editor",
+  "references": [
+    "circuitCharging"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": []
+}

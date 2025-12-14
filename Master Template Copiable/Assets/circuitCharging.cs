@@ -59,7 +59,7 @@ public class circuitCharging : MonoBehaviour
         new bool[14] { true, false, false, false, true, false, false, false, false, true, false, false, false, true }    //Z
     };
 
-    private static readonly bool[] allOff = { false, false, false, false, false, false, false, false, false, false, false, false, false, false};
+    private static readonly bool[] allOff = { false, false, false, false, false, false, false, false, false, false, false, false, false, false };
 
     private static readonly bool[][] brailleList = new string[26] { "100000", "110000", "100100", "100110", "100010", "110100", "110110", "110010", "010100", "010110", "101000", "111000", "101100", "101110", "101010", "111100", "111110", "111010", "011100", "011110", "101001", "111001", "010111", "101101", "101111", "101011" }.Select(i => i.Select(j => j == '1').ToArray()).ToArray(); //braille list stolen from angel hernandez
 
@@ -191,6 +191,7 @@ public class circuitCharging : MonoBehaviour
     int[] currentSelection = { -1, -1 };
     bool showingHint = false;
     bool[] morsePlaying = new bool[] { false, false };
+    bool[] caesarPlaying = { false, false };
     private string[] morseLetters = { ".-", "-...", "-.-.", "-..", ".", "..-.", "--.", "....", "..", ".---", "-.-", ".-..", "--", "-.", "---", ".--.", "--.-", ".-.", "...", "-", "..-", "...-", ".--", "-..-", "-.--", "--.." };
 
     private KeyCode[] typableKeys =
@@ -282,7 +283,7 @@ public class circuitCharging : MonoBehaviour
             {
                 if (currentSelection[0] == 1 && currentSelection[1] == 2) //double morse flash
                 {
-                    morsePlaying = new bool[]{true, true};
+                    morsePlaying = new bool[] { true, true };
                     StartCoroutine(LightMorse());
                     StartCoroutine(SpeakerMorse());
 
@@ -303,6 +304,47 @@ public class circuitCharging : MonoBehaviour
                     }
                     yield return new WaitForSeconds(0.5f);
                     displaySegments(allOff);
+                }
+                else if (currentSelection[0] == 2 && currentSelection[1] == 1) //five letters and caesar shift (quinn didn't implement this right)
+                {
+                    StartCoroutine(LightFlash());
+                    StartCoroutine(SpeakerCaesar());
+                    while (caesarPlaying[0] || caesarPlaying[1]) //wait until both finish
+                    {
+                        yield return null;
+                    }
+                }
+                else if (currentSelection[0] == 2 && currentSelection[1] == 3) //beep toggles
+                {
+                    displaySegments(sp_le_adjustedSegments);
+                    for (int i = 0; i < 14; i++)
+                    {
+                        Audio.PlaySoundAtTransform(sp_le_randomBeeps[i] == true ? "high" : "low", speaker.transform);
+                        yield return new WaitForSeconds(0.5f); //can't get a good read off of my own module smh
+                    }
+                    displaySegments(allOff);
+                }
+                else if (currentSelection[0] == 3 && currentSelection[1] == 1) //braille
+                {
+                    displaySegments(_segmentArragements[alphabet.IndexOf(le_li_randomLetter)]);
+                    for (int i = 0; i < 6; i++)
+                    {
+                        toggleLight(true);
+                        yield return new WaitForSeconds(le_li_lightsToToggle[i] == false ? 0.2f : 0.4f);
+                        toggleLight(false);
+                        yield return new WaitForSeconds(0.2f);
+                    }
+                    displaySegments(allOff);
+                }
+                else if (currentSelection[0] == 3 && currentSelection[1] == 2) //segment flash
+                {
+                    morsePlaying = new bool[]{ false, false}; //realized that i didn't need to make caesarPlaying at all but whatever
+                    StartCoroutine(SpeakerBeep());
+                    StartCoroutine(LetterShuffle());
+                    while (morsePlaying[0] || morsePlaying[1]) //wait
+                    {
+                        yield return null;
+                    }
                 }
             }
         }
@@ -331,6 +373,63 @@ public class circuitCharging : MonoBehaviour
         morsePlaying[1] = false;
         yield return null;
     }
+    IEnumerator LightFlash()
+    {
+        for (int i = 0; i < sp_li_shift; i++)
+        {
+            toggleLight(true);
+            yield return new WaitForSeconds(0.2f);
+            toggleLight(false);
+            yield return new WaitForSeconds(0.2f);
+        }
+        caesarPlaying[0] = false;
+    }
+    IEnumerator SpeakerCaesar()
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            Audio.PlaySoundAtTransform(sp_li_adjustedLetters[i].ToString().ToLower(), speaker.transform);
+            yield return new WaitForSeconds(0.65f);
+        }
+        caesarPlaying[1] = false;
+    }
+    IEnumerator SpeakerBeep()
+    {
+        int currentPosition = Rnd.Range(0, 2);
+        for (int j = 0; j < 2; j++)
+        {
+            for (int i = 0; i <= (currentPosition == 1 ? le_sp_pos1 : le_sp_pos2); i++)
+            {
+                Audio.PlaySoundAtTransform("low", speaker.transform);
+                yield return new WaitForSeconds(0.5f);
+            }
+            yield return new WaitForSeconds(1);
+            currentPosition = 1 - currentPosition;
+        }
+        morsePlaying[0] = false;
+    }
+    IEnumerator LetterShuffle()
+    {
+        List<int> segmentPositions = new List<int> { };
+        bool[] currentDisplay = { false, false, false, false, false, false, false, false, false, false, false, false, false, false };
+        for (int i = 0; i < 14; i++)
+        {
+            if (_segmentArragements[alphabet.IndexOf(le_sp_letter.ToString())][i] == true) //ARRAGEMENTS. HE MADE A TYPO
+            {
+                segmentPositions.Add(i);
+            }
+        }
+        segmentPositions = segmentPositions.Shuffle();
+        for (int i = 0; i < segmentPositions.Count(); i++)
+        {
+            currentDisplay = new bool[] { false, false, false, false, false, false, false, false, false, false, false, false, false, false };
+            currentDisplay[segmentPositions[i]] = true;
+            displaySegments(currentDisplay);
+            yield return new WaitForSeconds(0.5f);
+        }
+        displaySegments(allOff);
+        morsePlaying[1] = false;
+    }
 
     void Activate()
     {
@@ -344,6 +443,7 @@ public class circuitCharging : MonoBehaviour
     char li_le_letter;
     int li_le_flashes;
 
+    int sp_li_shift;
     int[] sp_li_correctLetterIxs;
     char[] sp_li_ogLetters;
     char[] sp_li_adjustedLetters;
@@ -388,7 +488,8 @@ public class circuitCharging : MonoBehaviour
             li_le_letter = chosenWord[li_le_ix];
             li_le_flashes = li_le_ix + 1;
 
-            // Speaker–Light: 5 letters, exactly 2 correct positions, ALL shifted backward 5
+            // Speaker–Light: 5 letters, exactly 2 correct positions, ALL shifted backward a random number
+            sp_li_shift = Rnd.Range(1, 6);
             sp_li_correctLetterIxs = Enumerable.Range(0, 5).ToArray()
                 .Shuffle().Take(2).OrderBy(i => i).ToArray();
 
@@ -408,7 +509,7 @@ public class circuitCharging : MonoBehaviour
                 }
 
                 char c = sp_li_ogLetters[i];
-                sp_li_adjustedLetters[i] = (c < 'F') ? (char)(c + 21) : (char)(c - 5);
+                sp_li_adjustedLetters[i] = (c - sp_li_shift < 'A') ? (char)((c - sp_li_shift) + 26) : (char)(c - sp_li_shift);
             }
 
             // Speaker–Letter: last letter from segments + beeps
@@ -433,7 +534,7 @@ public class circuitCharging : MonoBehaviour
             // Letter–Speaker: letter with one real and one faulty position
             le_sp_letterIndex = Rnd.Range(0, 5);
             le_sp_letter = chosenWord[le_sp_letterIndex];
-            le_sp_segments = _segmentArragements[le_sp_letter - 'A'].ToArray().Shuffle();
+            le_sp_segments = _segmentArragements[le_sp_letter - 'A'].ToArray().Shuffle(); //bad line of code.
 
             le_sp_otherPosition = Enumerable.Range(0, 5)
                 .Except(new[] { le_sp_letterIndex }).PickRandom();  // decoy position
@@ -523,8 +624,9 @@ public class circuitCharging : MonoBehaviour
                 li_le_letter, li_le_flashes);
 
         if (!bannedHints.Contains(2))
-            Debug.LogFormat("[Circuit Charging #{0}] Speaker-Light: OG letters = {1}, Adjusted letters = {2}, Correct positions = {3}", ModuleId,
+            Debug.LogFormat("[Circuit Charging #{0}] Speaker-Light: OG letters = {1}, Shift = {2} Adjusted letters = {3}, Correct positions = {4}", ModuleId,
                 sp_li_ogLetters.Join(""),
+                sp_li_shift,
                 sp_li_adjustedLetters.Join(""),
                 sp_li_correctLetterIxs.Join(" "));
 
