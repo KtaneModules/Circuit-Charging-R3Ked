@@ -4975,6 +4975,7 @@ MonoBehaviour:
   lightOff: {fileID: 2100000, guid: cea8ae16f8f72f04297283de8d889526, type: 2}
   segmentOff: {fileID: 2100000, guid: 82832a201638c455bb8349637b52950f, type: 2}
   on: {fileID: 2100000, guid: f407e9f4141298140a4c94512c28ca83, type: 2}
+  speaker: {fileID: 1420517644792598}
   inputDisplays:
   - {fileID: 102855340645323468}
   - {fileID: 102045425571918500}

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using UnityEditor.PackageManager;
 using UnityEditorInternal;
 using UnityEngine;
 using Rnd = UnityEngine.Random;
@@ -27,6 +28,7 @@ public class circuitCharging : MonoBehaviour
     public Material lightOff;
     public Material segmentOff;
     public Material on;
+    public GameObject speaker;
 
     private static readonly bool[][] _segmentArragements = new bool[26][] {
         new bool[14] { true, true, false, false, false, true, true, true, true, false, false, false, true, false },      //A
@@ -56,6 +58,8 @@ public class circuitCharging : MonoBehaviour
         new bool[14] { false, false, true, false, true, false, false, false, false, false, true, false, false, false },  //Y
         new bool[14] { true, false, false, false, true, false, false, false, false, true, false, false, false, true }    //Z
     };
+
+    private static readonly bool[] allOff = { false, false, false, false, false, false, false, false, false, false, false, false, false, false};
 
     private static readonly bool[][] brailleList = new string[26] { "100000", "110000", "100100", "100110", "100010", "110100", "110110", "110010", "010100", "010110", "101000", "111000", "101100", "101110", "101010", "111100", "111110", "111010", "011100", "011110", "101001", "111001", "010111", "101101", "101111", "101011" }.Select(i => i.Select(j => j == '1').ToArray()).ToArray(); //braille list stolen from angel hernandez
 
@@ -186,6 +190,8 @@ public class circuitCharging : MonoBehaviour
     public GameObject[] resistorLocations;
     int[] currentSelection = { -1, -1 };
     bool showingHint = false;
+    bool[] morsePlaying = new bool[] { false, false };
+    private string[] morseLetters = { ".-", "-...", "-.-.", "-..", ".", "..-.", "--.", "....", "..", ".---", "-.-", ".-..", "--", "-.", "---", ".--.", "--.-", ".-.", "...", "-", "..-", "...-", ".--", "-..-", "-.--", "--.." };
 
     private KeyCode[] typableKeys =
 {
@@ -236,7 +242,7 @@ public class circuitCharging : MonoBehaviour
                 resistors[resistorToRemove].SetActive(false);
             }
         }
-        else if (ModuleSolved == false) //player presses the charge button and module not solved (keeping the unsolved part for potential souv support)
+        else if (ModuleSolved == false && showingHint == false) //player presses the charge button and module not solved (keeping the unsolved part for potential souv support)
         {
             StartCoroutine(ShowHint());
         }
@@ -244,13 +250,91 @@ public class circuitCharging : MonoBehaviour
 
     IEnumerator ShowHint()
     {
-        Debug.Log("hi");
+        int[][] bannedHintsConversion = new int[6][]; //quinn made this a lot harder than it should've been
+        bannedHintsConversion[0] = new int[] { 1, 2 };
+        bannedHintsConversion[1] = new int[] { 1, 3 };
+        bannedHintsConversion[2] = new int[] { 2, 1 };
+        bannedHintsConversion[3] = new int[] { 2, 3 };
+        bannedHintsConversion[4] = new int[] { 3, 1 };
+        bannedHintsConversion[5] = new int[] { 3, 2 };
+
+        showingHint = true;
+        if ((currentSelection[0] == 2 && currentSelection[1] == -1) || (currentSelection[0] == -1 && currentSelection[1] == 2)) //player selects just the speaker
+        {
+            string[] componentList = { "light", "speaker", "letterdisplay" };
+            for (int i = 0; i < 2; i++)
+            {
+                for (int j = 0; j < 2; j++)
+                {
+                    Audio.PlaySoundAtTransform(componentList[bannedHintsConversion[bannedHints[i]][j] - 1], speaker.transform);
+                    yield return new WaitForSeconds(1);
+                }
+            }
+        }
+        else if (!currentSelection.Contains(-1)) //player tries to play one of the hints
+        {
+            if ((currentSelection[0] == bannedHintsConversion[bannedHints[0]][0] && currentSelection[1] == bannedHintsConversion[bannedHints[0]][1]) || (currentSelection[0] == bannedHintsConversion[bannedHints[1]][0] && currentSelection[1] == bannedHintsConversion[bannedHints[1]][1])) //banned hint check
+            {
+                Debug.LogFormat("[Circuit Charging #{0}] You tried to play a banned hint. Strike!", ModuleId);
+                Module.HandleStrike();
+            }
+            else
+            {
+                if (currentSelection[0] == 1 && currentSelection[1] == 2) //double morse flash
+                {
+                    morsePlaying = new bool[]{true, true};
+                    StartCoroutine(LightMorse());
+                    StartCoroutine(SpeakerMorse());
+
+                    while (morsePlaying[0] || morsePlaying[1]) //wait until both finish the morse thing
+                    {
+                        yield return null;
+                    }
+                }
+                else if (currentSelection[0] == 1 && currentSelection[1] == 3) //show letter and flash position
+                {
+                    displaySegments(_segmentArragements[alphabet.IndexOf(li_le_letter)]);
+                    for (int i = 0; i < li_le_flashes; i++)
+                    {
+                        toggleLight(true);
+                        yield return new WaitForSeconds(0.2f);
+                        toggleLight(false);
+                        yield return new WaitForSeconds(0.2f);
+                    }
+                    yield return new WaitForSeconds(0.5f);
+                    displaySegments(allOff);
+                }
+            }
+        }
+        showingHint = false;
         yield return null; //silence the compiler
+    }
+
+    IEnumerator LightMorse()
+    {
+        foreach (char symbol in morseLetters[alphabet.IndexOf(li_sp_letters[0])])
+        {
+            toggleLight(true);
+            yield return new WaitForSeconds(symbol == '.' ? 0.15f : 0.3f);
+            toggleLight(false);
+            yield return new WaitForSeconds(0.09f);
+        }
+        morsePlaying[0] = false;
+    }
+    IEnumerator SpeakerMorse()
+    {
+        foreach (char symbol in morseLetters[alphabet.IndexOf(li_sp_letters[1])])
+        {
+            Audio.PlaySoundAtTransform(symbol == '.' ? "dot" : "dash", speaker.transform);
+            yield return new WaitForSeconds(symbol == '.' ? 0.2f : 0.4f);
+        }
+        morsePlaying[1] = false;
+        yield return null;
     }
 
     void Activate()
     {
-        toggleLight(true);
+        toggleLight(false);
     }
 
     int li_sp_ix;
