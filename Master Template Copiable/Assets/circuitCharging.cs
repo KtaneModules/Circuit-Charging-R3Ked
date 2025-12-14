@@ -660,12 +660,14 @@ public class circuitCharging : MonoBehaviour
                         currentInput[lettersInputted] = keyboardLettersInOrder[i].ToString();
                         inputDisplays[lettersInputted].text = keyboardLettersInOrder[i].ToString();
                         lettersInputted++;
+                        Audio.PlaySoundAtTransform("type", speaker.transform);
                     }
                     else if (i == 26 && lettersInputted > 0) //player presses backspace
                     {
                         lettersInputted--;
                         currentInput[lettersInputted] = "";
                         inputDisplays[lettersInputted].text = "";
+                        Audio.PlaySoundAtTransform("back", speaker.transform);
                     }
                     else if (i == 27 && lettersInputted == 5) //player presses enter
                     {
@@ -675,6 +677,7 @@ public class circuitCharging : MonoBehaviour
                             Module.HandlePass();
                             Debug.LogFormat("[Circuit Charging #{0}] That is correct. Module solved.", ModuleId);
                             ModuleSolved = true;
+                            Audio.PlaySoundAtTransform("solve", speaker.transform);
                         }
                         else
                         {
